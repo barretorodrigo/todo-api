@@ -2,7 +2,7 @@ const express = require('express'); // framework
 const app = express(); 
 const port = 3000;
 const bodyParser = require('body-parser'); // interpretação do json
-const { Tarefa } = require('./models');
+const { Tarefa, User } = require('./models');
 const cors = require('cors');
 
 app.use(bodyParser.json());
@@ -14,7 +14,15 @@ app.get('/', async(req, res)=>{
 })
 
 app.get('/tarefas', async(req,res)=>{
-    const tarefas = await Tarefa.findAll();
+    const tarefas = await Tarefa.findAll({
+        include:[
+            {
+                model: User,
+                as: 'Users',
+                through: { attributes: [] }
+            }
+        ]
+    });
     res.status(200).json(tarefas);
 })
 
@@ -28,7 +36,9 @@ app.get('/tarefas/:id', async(req, res)=>{
 });
 
 app.post('/tarefas', async(req, res)=>{
-    const tarefa = await Tarefa.create(req.body);
+    const { users, ...data } = req.body;
+    const tarefa = await Tarefa.create(data);
+    tarefa.setUsers(users);
     res.status(201).json(tarefa);
 });
 
@@ -47,8 +57,12 @@ app.put('/tarefas/:id', async(req, res)=>{
             id: req.params.id
         }
     });
-    res.status(200).json(tarefa);  // V1NNI7#0001
+    res.status(200).json(tarefa);  
 });
 
+app.post('/users', async(req, res)=>{
+    const user = await User.create(req.body);
+    res.status(201).json(user);
+});
 
 app.listen(process.env.PORT || port);
